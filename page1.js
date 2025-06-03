@@ -130,133 +130,168 @@ for (let i = 0; i < numBuildings; i++) {
     height = Math.random() * 80 + 120; // All buildings between 120 and 200 units tall
 
     if (isPositionValid(x, z, sizeX, sizeZ, minDistance)) {
-        validPosition = true;
-        buildingPositions.push({ x, z, sizeX, sizeZ }); // Store center and full size
+      validPosition = true;
+      buildingPositions.push({ x, z, sizeX, sizeZ });
 
-        const neonColors = [0xff3399, 0x33ccff, 0xffff33, 0x00ffcc];
-        const neonColor = neonColors[Math.floor(Math.random() * neonColors.length)];
-        
-        // FIX: Building material: set transparent to false or remove it
-        const buildingMaterial = new THREE.MeshStandardMaterial({
-          color: 0xffffff, // Let the texture show its true color
-          roughness: 0.5,
-          metalness: 0.7,
-          //emissive: neonColor,
-          //emissiveIntensity: 1.2, // Brighter neon glow
+      const neonColors = [0xff3399, 0x33ccff, 0xffff33, 0x00ffcc];
+      const neonColor = neonColors[Math.floor(Math.random() * neonColors.length)];
+
+      // Use tower geometry for the first 3 buildings
+      let building;
+      if (i < 3) {
+        // Main tower body (cylinder)
+        const towerRadius = Math.min(sizeX, sizeZ) * 0.5;
+        const towerGeometry = new THREE.CylinderGeometry(towerRadius, towerRadius * 0.8, height, 24);
+        const towerMaterial = new THREE.MeshStandardMaterial({
+          color: 0xffffff,
+          roughness: 0.4,
+          metalness: 0.8,
+          emissive: neonColor,
+          emissiveIntensity: 0.5,
           map: windowTexture,
         });
-
-        const buildingGeometry = new THREE.BoxGeometry(sizeX, height, sizeZ);
-        const building = new THREE.Mesh(buildingGeometry, buildingMaterial);
-        
-        // FIX: Building Y position to sit on the ground
+        building = new THREE.Mesh(towerGeometry, towerMaterial);
         building.position.set(x, groundTopY + height / 2, z);
         building.castShadow = true;
         building.receiveShadow = true;
         scene.add(building);
 
-        const edgeMaterial = new THREE.MeshStandardMaterial({ color: neonColor, emissive: neonColor, emissiveIntensity: 1.5 });
-        const edgeHeight = 0.5;
-        // Using BoxGeometry for edges, consider EdgesGeometry for more precise outlines if needed.
-        const edgeGeo = new THREE.BoxGeometry(sizeX + 0.5, edgeHeight, sizeZ + 0.5); // Slightly larger for visibility
 
-        const topEdge = new THREE.Mesh(edgeGeo, edgeMaterial);
-        // FIX: Edge Y position based on corrected building position
-        topEdge.position.set(x, groundTopY + height - edgeHeight / 2, z); // On top of the building
-        scene.add(topEdge);
-
-        const bottomEdge = new THREE.Mesh(edgeGeo, edgeMaterial);
-        // FIX: Edge Y position based on corrected building position
-        bottomEdge.position.set(x, groundTopY + edgeHeight / 2, z); // At the base of the building
-        scene.add(bottomEdge);
-
-        const pointLight = new THREE.PointLight(neonColor, 2.0, 60); // Light properties look fine
-        pointLight.position.set(x, groundTopY + height + 3, z);
-        pointLight.castShadow = false; // Point lights from neons usually don't need to cast shadow for performance
-        scene.add(pointLight);
-
-        // Add glowing window planes to each side of the building
-        // Reduce the number of windows even more
-        const windowRows = 2; // Only 2 rows
-        const windowCols = 2; // Only 2 columns
-
-        const windowWidth = sizeX / windowCols * 0.5;
-        const windowHeight = height / windowRows * 0.4;
-        const windowDepth = 0.2;
-
-        // Window material with a subtle glow
-        const windowMat = new THREE.MeshStandardMaterial({
-          color: 0x00ffff,
-          emissive: 0x00ffff,
-          emissiveIntensity: 0.5, // Lower for subtle glow
-          transparent: true,
-          opacity: 0.7
+        // Optional: Add a glowing ring near the top
+        const ringGeometry = new THREE.TorusGeometry(towerRadius * 0.7, 0.7, 8, 32);
+        const ringMaterial = new THREE.MeshStandardMaterial({
+          color: neonColor,
+          emissive: neonColor,
+          emissiveIntensity: 2,
+          metalness: 1,
+          roughness: 0.1,
         });
+        const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+        ring.position.set(x, groundTopY + height * 0.45, z);
+        ring.rotation.x = Math.PI / 2;
+        scene.add(ring);
+      } else {
+        // ...your existing cube building code...
+        const buildingMaterial = new THREE.MeshStandardMaterial({
+          color: 0xffffff,
+          roughness: 0.5,
+          metalness: 0.7,
+          map: windowTexture,
+        });
+        const buildingGeometry = new THREE.BoxGeometry(sizeX, height, sizeZ);
+        building = new THREE.Mesh(buildingGeometry, buildingMaterial);
+        building.position.set(x, groundTopY + height / 2, z);
+        building.castShadow = true;
+        building.receiveShadow = true;
+        scene.add(building);
+      }
 
-        // Add windows to the +Z and -Z faces
-        for (let row = 0; row < windowRows; row++) {
-          for (let col = 0; col < windowCols; col++) {
-            const y = groundTopY + (row + 0.5) * (height / windowRows);
-            const xOffset = (col - (windowCols - 1) / 2) * (sizeX / windowCols);
+      const edgeMaterial = new THREE.MeshStandardMaterial({ color: neonColor, emissive: neonColor, emissiveIntensity: 1.5 });
+      const edgeHeight = 0.5;
+      // Using BoxGeometry for edges, consider EdgesGeometry for more precise outlines if needed.
+      const edgeGeo = new THREE.BoxGeometry(sizeX + 0.5, edgeHeight, sizeZ + 0.5); // Slightly larger for visibility
 
-            // +Z face
-            const win1 = new THREE.Mesh(
-              new THREE.PlaneGeometry(windowWidth, windowHeight),
-              windowMat
-            );
-            win1.position.set(x + xOffset, y, z + sizeZ / 2 + windowDepth / 2 + 0.01);
-            win1.rotation.y = 0;
-            scene.add(win1);
+      const topEdge = new THREE.Mesh(edgeGeo, edgeMaterial);
+      // FIX: Edge Y position based on corrected building position
+      topEdge.position.set(x, groundTopY + height - edgeHeight / 2, z); // On top of the building
+      scene.add(topEdge);
 
-            // -Z face
-            const win2 = new THREE.Mesh(
-              new THREE.PlaneGeometry(windowWidth, windowHeight),
-              windowMat
-            );
-            win2.position.set(x + xOffset, y, z - sizeZ / 2 - windowDepth / 2 - 0.01);
-            win2.rotation.y = Math.PI;
-            scene.add(win2);
+      const bottomEdge = new THREE.Mesh(edgeGeo, edgeMaterial);
+      // FIX: Edge Y position based on corrected building position
+      bottomEdge.position.set(x, groundTopY + edgeHeight / 2, z); // At the base of the building
+      scene.add(bottomEdge);
 
-            // Add a small point light for window glow
-            const windowLight = new THREE.PointLight(0x00ffff, 0.3, 10);
-            windowLight.position.set(x + xOffset, y, z + sizeZ / 2 + windowDepth + 0.2);
-            scene.add(windowLight);
-          }
-        }
+      const pointLight = new THREE.PointLight(neonColor, 2.0, 60); // Light properties look fine
+      pointLight.position.set(x, groundTopY + height + 3, z);
+      pointLight.castShadow = false; // Point lights from neons usually don't need to cast shadow for performance
+      scene.add(pointLight);
 
-        // Add windows to the +X and -X faces
-        const windowColsX = 2;
-        const windowWidthX = sizeZ / windowColsX * 0.5;
-        for (let row = 0; row < windowRows; row++) {
-          for (let col = 0; col < windowColsX; col++) {
-            const y = groundTopY + (row + 0.5) * (height / windowRows);
-            const zOffset = (col - (windowColsX - 1) / 2) * (sizeZ / windowColsX);
+      // Pick a random neon color for this building's windows
+      const windowNeonColors = [0x00ffff, 0xff00ff, 0xffff00, 0xff8800, 0x00ff66, 0x3399ff];
+      const windowColor = windowNeonColors[Math.floor(Math.random() * windowNeonColors.length)];
 
-            // +X face
-            const win3 = new THREE.Mesh(
-              new THREE.PlaneGeometry(windowWidthX, windowHeight),
-              windowMat
-            );
-            win3.position.set(x + sizeX / 2 + windowDepth / 2 + 0.01, y, z + zOffset);
-            win3.rotation.y = Math.PI / 2;
-            scene.add(win3);
+      // Window material with a subtle glow, unique per building
+      const windowMat = new THREE.MeshStandardMaterial({
+        color: windowColor,
+        emissive: windowColor,
+        emissiveIntensity: 0.5,
+        transparent: true,
+        opacity: 0.7
+      });
 
-            // -X face
-            const win4 = new THREE.Mesh(
-              new THREE.PlaneGeometry(windowWidthX, windowHeight),
-              windowMat
-            );
-            win4.position.set(x - sizeX / 2 - windowDepth / 2 - 0.01, y, z + zOffset);
-            win4.rotation.y = -Math.PI / 2;
-            scene.add(win4);
+      // Add glowing window planes to each side of the building
+      // Reduce the number of windows even more
+      const windowRows = 2; // Only 2 rows
+      const windowCols = 2; // Only 2 columns
 
-            // Add a small point light for window glow
-            const windowLight = new THREE.PointLight(0x00ffff, 0.3, 10);
-            windowLight.position.set(x + sizeX / 2 + windowDepth + 0.2, y, z + zOffset);
-            scene.add(windowLight);
-          }
+      const windowWidth = sizeX / windowCols * 0.5;
+      const windowHeight = height / windowRows * 0.4;
+      const windowDepth = 0.2;
+
+      // Add windows to the +Z and -Z faces
+      for (let row = 0; row < windowRows; row++) {
+        for (let col = 0; col < windowCols; col++) {
+          const y = groundTopY + (row + 0.5) * (height / windowRows);
+          const xOffset = (col - (windowCols - 1) / 2) * (sizeX / windowCols);
+
+          // +Z face
+          const win1 = new THREE.Mesh(
+            new THREE.PlaneGeometry(windowWidth, windowHeight),
+            windowMat
+          );
+          win1.position.set(x + xOffset, y, z + sizeZ / 2 + windowDepth / 2 + 0.01);
+          win1.rotation.y = 0;
+          scene.add(win1);
+
+          // -Z face
+          const win2 = new THREE.Mesh(
+            new THREE.PlaneGeometry(windowWidth, windowHeight),
+            windowMat
+          );
+          win2.position.set(x + xOffset, y, z - sizeZ / 2 - windowDepth / 2 - 0.01);
+          win2.rotation.y = Math.PI;
+          scene.add(win2);
+
+          // Add a small point light for window glow
+          const windowLight = new THREE.PointLight(0x00ffff, 0.3, 10);
+          windowLight.position.set(x + xOffset, y, z + sizeZ / 2 + windowDepth + 0.2);
+          scene.add(windowLight);
         }
       }
+
+      // Add windows to the +X and -X faces
+      const windowColsX = 2;
+      const windowWidthX = sizeZ / windowColsX * 0.5;
+      for (let row = 0; row < windowRows; row++) {
+        for (let col = 0; col < windowColsX; col++) {
+          const y = groundTopY + (row + 0.5) * (height / windowRows);
+          const zOffset = (col - (windowColsX - 1) / 2) * (sizeZ / windowColsX);
+
+          // +X face
+          const win3 = new THREE.Mesh(
+            new THREE.PlaneGeometry(windowWidthX, windowHeight),
+            windowMat
+          );
+          win3.position.set(x + sizeX / 2 + windowDepth / 2 + 0.01, y, z + zOffset);
+          win3.rotation.y = Math.PI / 2;
+          scene.add(win3);
+
+          // -X face
+          const win4 = new THREE.Mesh(
+            new THREE.PlaneGeometry(windowWidthX, windowHeight),
+            windowMat
+          );
+          win4.position.set(x - sizeX / 2 - windowDepth / 2 - 0.01, y, z + zOffset);
+          win4.rotation.y = -Math.PI / 2;
+          scene.add(win4);
+
+          // Add a small point light for window glow
+          const windowLight = new THREE.PointLight(0x00ffff, 0.3, 10);
+          windowLight.position.set(x + sizeX / 2 + windowDepth + 0.2, y, z + zOffset);
+          scene.add(windowLight);
+        }
+      }
+    }
     attempts++;
   }
    if (!validPosition) {
@@ -386,15 +421,15 @@ window.addEventListener('resize', () => {
 const billboardTexture = new THREE.TextureLoader().load('images.png');
 
 // Billboard size
-const billboardWidth = 120;
-const billboardHeight = 60;
+const billboardWidth = 300;
+const billboardHeight = 50;
 
 // Place the billboard at the rear (far Z+) of the city in the second quadrant
 const billboardGeo = new THREE.PlaneGeometry(billboardWidth, billboardHeight);
 const billboardMat = new THREE.MeshStandardMaterial({
   map: billboardTexture,
   //emissive: 0xffffff,
-  //emissiveIntensity: 1.5,
+  //emissiveIntensity: 0.5,
   side: THREE.DoubleSide
 });
 const billboard = new THREE.Mesh(billboardGeo, billboardMat);
@@ -402,7 +437,7 @@ const billboard = new THREE.Mesh(billboardGeo, billboardMat);
 // Position: Centered in X, high above ground, at the far end of city Z+
 billboard.position.set(
   (cityMinX + cityMaxX) / 2,
-  groundTopY + billboardHeight / 2 + 30,
+  groundTopY + billboardHeight / 2 + 130,
   cityMaxZ + 20 // a bit behind the last buildings
 );
 billboard.rotation.y = Math.PI;
@@ -410,3 +445,47 @@ billboard.rotation.y = Math.PI;
 billboard.castShadow = false;
 billboard.receiveShadow = false;
 scene.add(billboard);
+
+// === GATE SETUP ===
+const gateX = (cityMinX + cityMaxX) / 2; // Centered in X
+const gateZ = cityMinZ - 40; // In front of the city (adjust -40 as needed)
+const gateY = groundTopY; // On the ground
+
+const gateHeight = 90;
+const gateRadius = 5;
+const gateDistance = 140; // Distance between the two cylinders
+
+const billboardgateTexture = new THREE.TextureLoader().load('gate_text.jpg');
+
+// Left pillar
+const pillarGeo = new THREE.CylinderGeometry(gateRadius, gateRadius, gateHeight, 24);
+const pillarMat = new THREE.MeshStandardMaterial({
+  color: 0x00ffff,
+  //emissive: 0x00ffff,
+  //emissiveIntensity: 1.2,
+  metalness: 0.8,
+  roughness: 0.3
+});
+const leftPillar = new THREE.Mesh(pillarGeo, pillarMat);
+leftPillar.position.set(gateX - gateDistance / 2, gateY + gateHeight / 2, gateZ);
+scene.add(leftPillar);
+
+// Right pillar
+const rightPillar = new THREE.Mesh(pillarGeo, pillarMat);
+rightPillar.position.set(gateX + gateDistance / 2, gateY + gateHeight / 2, gateZ);
+scene.add(rightPillar);
+
+// Billboard above the gate
+const gateBillboardWidth = 160;
+const gateBillboardHeight = 100;
+const gateBillboardGeo = new THREE.PlaneGeometry(gateBillboardWidth, gateBillboardHeight);
+const gateBillboardMat = new THREE.MeshStandardMaterial({
+  map: billboardgateTexture, // <-- Use the gate texture here!
+  //emissive: 0xffffff,
+  //emissiveIntensity: 1.2,
+  side: THREE.DoubleSide
+});
+const gateBillboard = new THREE.Mesh(gateBillboardGeo, gateBillboardMat);
+gateBillboard.position.set(gateX, gateY + gateHeight + gateBillboardHeight / 2 + 2, gateZ);
+gateBillboard.rotation.y = Math.PI; // Face the same way as main billboard
+scene.add(gateBillboard);
