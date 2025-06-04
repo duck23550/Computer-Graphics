@@ -8,6 +8,7 @@ const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.setPixelRatio(window.devicePixelRatio * 0.75); // Lower renderer pixel ratio for performance
 document.body.appendChild(renderer.domElement);
 
 const centralX = 300;
@@ -33,8 +34,8 @@ scene.add(ambientLight);
 const sunlight = new THREE.DirectionalLight(0xffffff, 1.5);
 sunlight.position.set(centralX + 50, centralY + 200, centralZ + 50);
 sunlight.castShadow = true;
-sunlight.shadow.mapSize.width = 2048;
-sunlight.shadow.mapSize.height = 2048;
+sunlight.shadow.mapSize.width = 1024; // Lower shadow map size
+sunlight.shadow.mapSize.height = 1024;
 sunlight.shadow.camera.near = 0.5;
 sunlight.shadow.camera.far = 1000;
 // FIX: Adjust shadow camera frustum for better shadow coverage
@@ -102,7 +103,7 @@ function isPositionValid(x, z, sizeX, sizeZ, minDistance) {
 }
 
 const numBuildings = 15;
-const minDistance = 12; // Minimum distance between buildings
+const minDistance = 15; // Minimum distance between buildings
 
 // Ensure your texture path is correct.
 // If 'textures/neon-windows.jpg' is not found, the map will not apply.
@@ -141,7 +142,8 @@ for (let i = 0; i < numBuildings; i++) {
       if (i < 3) {
         // Main tower body (cylinder)
         const towerRadius = Math.min(sizeX, sizeZ) * 0.5;
-        const towerGeometry = new THREE.CylinderGeometry(towerRadius, towerRadius * 0.8, height, 24);
+        // Lower geometry segments for towers and rings
+        const towerGeometry = new THREE.CylinderGeometry(towerRadius, towerRadius * 0.8, height, 10); // was 12+
         const towerMaterial = new THREE.MeshStandardMaterial({
           color: 0xffffff,
           roughness: 0.4,
@@ -158,7 +160,7 @@ for (let i = 0; i < numBuildings; i++) {
 
 
         // Optional: Add a glowing ring near the top
-        const ringGeometry = new THREE.TorusGeometry(towerRadius * 0.7, 0.7, 8, 32);
+        const ringGeometry = new THREE.TorusGeometry(towerRadius * 0.7, 0.7, 6, 10); // was 12+
         const ringMaterial = new THREE.MeshStandardMaterial({
           color: neonColor,
           emissive: neonColor,
@@ -201,20 +203,15 @@ for (let i = 0; i < numBuildings; i++) {
       bottomEdge.position.set(x, groundTopY + edgeHeight / 2, z); // At the base of the building
       scene.add(bottomEdge);
 
-      const pointLight = new THREE.PointLight(neonColor, 2.0, 60); // Light properties look fine
-      pointLight.position.set(x, groundTopY + height + 3, z);
-      pointLight.castShadow = false; // Point lights from neons usually don't need to cast shadow for performance
-      scene.add(pointLight);
-
       // Pick a random neon color for this building's windows
       const windowNeonColors = [0x00ffff, 0xff00ff, 0xffff00, 0xff8800, 0x00ff66, 0x3399ff];
       const windowColor = windowNeonColors[Math.floor(Math.random() * windowNeonColors.length)];
 
-      // Window material with a subtle glow, unique per building
+      // Window material (keep emissive for glow, remove point lights)
       const windowMat = new THREE.MeshStandardMaterial({
         color: windowColor,
         emissive: windowColor,
-        emissiveIntensity: 0.5,
+        emissiveIntensity: 0.7,
         transparent: true,
         opacity: 0.7
       });
@@ -253,9 +250,9 @@ for (let i = 0; i < numBuildings; i++) {
           scene.add(win2);
 
           // Add a small point light for window glow
-          const windowLight = new THREE.PointLight(0x00ffff, 0.3, 10);
+          /*const windowLight = new THREE.PointLight(0x00ffff, 0.3, 10);
           windowLight.position.set(x + xOffset, y, z + sizeZ / 2 + windowDepth + 0.2);
-          scene.add(windowLight);
+          scene.add(windowLight);*/
         }
       }
 
@@ -286,9 +283,9 @@ for (let i = 0; i < numBuildings; i++) {
           scene.add(win4);
 
           // Add a small point light for window glow
-          const windowLight = new THREE.PointLight(0x00ffff, 0.3, 10);
+          /*const windowLight = new THREE.PointLight(0x00ffff, 0.3, 10);
           windowLight.position.set(x + sizeX / 2 + windowDepth + 0.2, y, z + zOffset);
-          scene.add(windowLight);
+          scene.add(windowLight);*/
         }
       }
     }
@@ -415,36 +412,6 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// Add this after your buildings and before animation loop
-
-// Load the billboard texture
-const billboardTexture = new THREE.TextureLoader().load('images.png');
-
-// Billboard size
-const billboardWidth = 300;
-const billboardHeight = 50;
-
-// Place the billboard at the rear (far Z+) of the city in the second quadrant
-const billboardGeo = new THREE.PlaneGeometry(billboardWidth, billboardHeight);
-const billboardMat = new THREE.MeshStandardMaterial({
-  map: billboardTexture,
-  //emissive: 0xffffff,
-  //emissiveIntensity: 0.5,
-  side: THREE.DoubleSide
-});
-const billboard = new THREE.Mesh(billboardGeo, billboardMat);
-
-// Position: Centered in X, high above ground, at the far end of city Z+
-billboard.position.set(
-  (cityMinX + cityMaxX) / 2,
-  groundTopY + billboardHeight / 2 + 130,
-  cityMaxZ + 20 // a bit behind the last buildings
-);
-billboard.rotation.y = Math.PI;
-
-billboard.castShadow = false;
-billboard.receiveShadow = false;
-scene.add(billboard);
 
 // === GATE SETUP ===
 const gateX = (cityMinX + cityMaxX) / 2; // Centered in X
@@ -458,7 +425,7 @@ const gateDistance = 140; // Distance between the two cylinders
 const billboardgateTexture = new THREE.TextureLoader().load('gate_text.jpg');
 
 // Left pillar
-const pillarGeo = new THREE.CylinderGeometry(gateRadius, gateRadius, gateHeight, 24);
+const pillarGeo = new THREE.CylinderGeometry(gateRadius, gateRadius, gateHeight, 8);
 const pillarMat = new THREE.MeshStandardMaterial({
   color: 0x00ffff,
   //emissive: 0x00ffff,
@@ -482,7 +449,7 @@ const gateBillboardGeo = new THREE.PlaneGeometry(gateBillboardWidth, gateBillboa
 const gateBillboardMat = new THREE.MeshStandardMaterial({
   map: billboardgateTexture, // <-- Use the gate texture here!
   //emissive: 0xffffff,
-  //emissiveIntensity: 1.2,
+  emissiveIntensity: 1.2,
   side: THREE.DoubleSide
 });
 const gateBillboard = new THREE.Mesh(gateBillboardGeo, gateBillboardMat);
