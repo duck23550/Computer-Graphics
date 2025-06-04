@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
+
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -102,7 +103,7 @@ function isPositionValid(x, z, sizeX, sizeZ, minDistance) {
   return true; // Position is valid
 }
 
-const numBuildings = 15;
+const numBuildings = 12;
 const minDistance = 15; // Minimum distance between buildings
 
 // Ensure your texture path is correct.
@@ -125,10 +126,10 @@ for (let i = 0; i < numBuildings; i++) {
     x = centralX - (Math.random() * 400 + 150); // Always less than centralX, so negative relative to origin
     z = centralZ + (Math.random() * 400 + 150); // Always greater than centralZ, so positive relative to origin
 
-    sizeX = Math.random() * 20 + 15;
-    sizeZ = Math.random() * 20 + 15;
+    sizeX = Math.random() * 20 + 25;
+    sizeZ = Math.random() * 20 + 25;
     // Make all buildings tall: set a high minimum and maximum height
-    height = Math.random() * 80 + 120; // All buildings between 120 and 200 units tall
+    height = Math.random() * 80 + 150; // All buildings between 120 and 200 units tall
 
     if (isPositionValid(x, z, sizeX, sizeZ, minDistance)) {
       validPosition = true;
@@ -163,8 +164,8 @@ for (let i = 0; i < numBuildings; i++) {
         const ringGeometry = new THREE.TorusGeometry(towerRadius * 0.7, 0.7, 6, 10); // was 12+
         const ringMaterial = new THREE.MeshStandardMaterial({
           color: neonColor,
-          emissive: neonColor,
-          emissiveIntensity: 2,
+          //emissive: neonColor,
+          //emissiveIntensity: 2,
           metalness: 1,
           roughness: 0.1,
         });
@@ -231,28 +232,23 @@ for (let i = 0; i < numBuildings; i++) {
           const y = groundTopY + (row + 0.5) * (height / windowRows);
           const xOffset = (col - (windowCols - 1) / 2) * (sizeX / windowCols);
 
-          // +Z face
+          // +Z face (stick to building)
           const win1 = new THREE.Mesh(
             new THREE.PlaneGeometry(windowWidth, windowHeight),
             windowMat
           );
-          win1.position.set(x + xOffset, y, z + sizeZ / 2 + windowDepth / 2 + 0.01);
+          win1.position.set(x + xOffset, y, z + sizeZ / 2 + 0.5 * Math.sign(windowDepth));
           win1.rotation.y = 0;
           scene.add(win1);
 
-          // -Z face
+          // -Z face (stick to building)
           const win2 = new THREE.Mesh(
             new THREE.PlaneGeometry(windowWidth, windowHeight),
             windowMat
           );
-          win2.position.set(x + xOffset, y, z - sizeZ / 2 - windowDepth / 2 - 0.01);
+          win2.position.set(x + xOffset, y, z - sizeZ / 2 - 0.5 * Math.sign(windowDepth));
           win2.rotation.y = Math.PI;
           scene.add(win2);
-
-          // Add a small point light for window glow
-          /*const windowLight = new THREE.PointLight(0x00ffff, 0.3, 10);
-          windowLight.position.set(x + xOffset, y, z + sizeZ / 2 + windowDepth + 0.2);
-          scene.add(windowLight);*/
         }
       }
 
@@ -264,28 +260,23 @@ for (let i = 0; i < numBuildings; i++) {
           const y = groundTopY + (row + 0.5) * (height / windowRows);
           const zOffset = (col - (windowColsX - 1) / 2) * (sizeZ / windowColsX);
 
-          // +X face
+          // +X face (stick to building)
           const win3 = new THREE.Mesh(
             new THREE.PlaneGeometry(windowWidthX, windowHeight),
             windowMat
           );
-          win3.position.set(x + sizeX / 2 + windowDepth / 2 + 0.01, y, z + zOffset);
+          win3.position.set(x + sizeX / 2 + 0.5 * Math.sign(windowDepth), y, z + zOffset);
           win3.rotation.y = Math.PI / 2;
           scene.add(win3);
 
-          // -X face
+          // -X face (stick to building)
           const win4 = new THREE.Mesh(
             new THREE.PlaneGeometry(windowWidthX, windowHeight),
             windowMat
           );
-          win4.position.set(x - sizeX / 2 - windowDepth / 2 - 0.01, y, z + zOffset);
+          win4.position.set(x - sizeX / 2 - 0.5 * Math.sign(windowDepth), y, z + zOffset);
           win4.rotation.y = -Math.PI / 2;
           scene.add(win4);
-
-          // Add a small point light for window glow
-          /*const windowLight = new THREE.PointLight(0x00ffff, 0.3, 10);
-          windowLight.position.set(x + sizeX / 2 + windowDepth + 0.2, y, z + zOffset);
-          scene.add(windowLight);*/
         }
       }
     }
