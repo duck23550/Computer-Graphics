@@ -4,7 +4,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
@@ -12,17 +12,19 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.setPixelRatio(window.devicePixelRatio * 0.75); // Lower renderer pixel ratio for performance
 document.body.appendChild(renderer.domElement);
 
-// Move everything to the second quadrant: X < 0, Z > 0
-const centralX = -300; // was 300
-const centralY = 50;
-const centralZ = 300;  // was -300
+// === Place all objects in the top right quadrant: x > 0, z < 0 ===
 
+// Set the center of the top right quadrant
+const centralX = 300; // x > 0
+const centralY = 50;
+const centralZ = -300; // z < 0
+
+// Night sky: deep blue to almost black
 const canvas = document.createElement('canvas');
 canvas.width = 512;
 canvas.height = 512;
 const context = canvas.getContext('2d');
 const gradient = context.createLinearGradient(0, 0, 0, 512);
-// Night sky: deep blue to almost black
 gradient.addColorStop(0, '#0a0a23'); // Top: very dark blue
 gradient.addColorStop(1, '#000010'); // Bottom: almost black
 context.fillStyle = gradient;
@@ -120,12 +122,13 @@ const windowTexture = textureLoader.load('neon-windows.jpg',
 // Example: Define your city model layout here
 const buildingModel = [
   // { x, z, sizeX, sizeZ, height }
-  { x: -700, z: -100, sizeX: 40, sizeZ: 40, height: 300 },
-  { x: -600, z: -200, sizeX: 30, sizeZ: 30, height: 260 },
-  { x: -300, z: -300, sizeX: 50, sizeZ: 50, height: 320 },
-  { x: -400, z: -400, sizeX: 35, sizeZ: 35, height: 280 },
-  { x: -500, z: -500, sizeX: 45, sizeZ: 45, height: 350 },
-  // ...add as many as you want, all x < 0, z < 0
+  { x: 700, z: -500, sizeX: 40, sizeZ: 40, height: 300 },
+  { x: 750, z: -450, sizeX: 30, sizeZ: 30, height: 260 },
+  { x: 800, z: -600, sizeX: 50, sizeZ: 50, height: 320 },
+  { x: 600, z: -700, sizeX: 35, sizeZ: 35, height: 280 },
+  { x: 550, z: -750, sizeX: 45, sizeZ: 45, height: 350 },
+  { x: 850, z: -770, sizeX: 45, sizeZ: 45, height: 350 },
+  // ...add more as needed, all x > 0, z < 0
 ];
 
 // Remove the random for-loop and use this:
@@ -298,10 +301,10 @@ const carColorPairs = [
 ];
 
 // Define city bounds in the second quadrant (match building generation)
-const cityMinX = centralX - 550;
-const cityMaxX = centralX - 150;
-const cityMinZ = centralZ + 150;
-const cityMaxZ = centralZ + 550;
+const cityMinX = 300;
+const cityMaxX = 700;
+const cityMinZ = -300;
+const cityMaxZ = -700;
 
 // Load cyberpunk hovercar models with different colors
 const loader = new GLTFLoader();
